@@ -18,9 +18,9 @@ diff --git a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_helpers.c b/drivers
 index e47098fa5aac..1c9c4925ed2f 100644
 --- a/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_helpers.c
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_helpers.c
-@@ -87,6 +87,8 @@ enum dc_edid_status dm_helpers_parse_edid_caps(
+@@ -129,6 +129,8 @@ enum dc_edid_status dm_helpers_parse_edid_caps(
  
- 	edid_caps->edid_hdmi = connector->display_info.is_hdmi;
+ 	apply_edid_quirks(edid_buf, edid_caps);
  
 +	edid_caps->dsc_fixed_bits_per_pixel_x16 = connector->display_info.dp_dsc_bpp;
 +
@@ -31,7 +31,7 @@ diff --git a/drivers/gpu/drm/amd/display/dc/core/dc_stream.c b/drivers/gpu/drm/a
 index 38d71b5c1f2d..f2467b64268b 100644
 --- a/drivers/gpu/drm/amd/display/dc/core/dc_stream.c
 +++ b/drivers/gpu/drm/amd/display/dc/core/dc_stream.c
-@@ -103,6 +103,8 @@ static bool dc_stream_construct(struct dc_stream_state *stream,
+@@ -108,6 +108,8 @@ static bool dc_stream_construct(struct dc_stream_state *stream,
  
  	/* EDID CAP translation for HDMI 2.0 */
  	stream->timing.flags.LTE_340MCSC_SCRAMBLE = dc_sink_data->edid_caps.lte_340mcsc_scramble;
@@ -44,7 +44,7 @@ diff --git a/drivers/gpu/drm/amd/display/dc/dc_types.h b/drivers/gpu/drm/amd/dis
 index dc78e2404b48..65915a10ab48 100644
 --- a/drivers/gpu/drm/amd/display/dc/dc_types.h
 +++ b/drivers/gpu/drm/amd/display/dc/dc_types.h
-@@ -231,6 +231,9 @@ struct dc_edid_caps {
+@@ -208,6 +208,9 @@ struct dc_edid_caps {
  	bool edid_hdmi;
  	bool hdr_supported;
  

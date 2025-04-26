@@ -1,0 +1,26 @@
+--- kernel.spec.old	2024-11-10 16:41:26.110148883 +0000
++++ kernel.spec	2024-11-09 01:28:19.723086738 +0000
+@@ -1018,6 +1018,11 @@
+ Patch1: patch-%{patchversion}-redhat.patch
+ %endif
+ 
++Patch10000: 0001-drm-edid-Add-Bigscreen-Beyond-to-non-desktop-l.patch
++Patch10001: 0001-drm-edid-Add-Vive-Cosmos-Vive-Pro-2-to-non-desktop-l.patch
++Patch10002: 0002-drm-edid-parse-DRM-VESA-dsc-bpp-target.patch
++Patch10003: 0003-drm-amd-use-fixed-dsc-bits-per-pixel-from-edid.patch
++
+ # empty final patch to facilitate testing of kernel patches
+ Patch999999: linux-kernel-test.patch
+ 
+@@ -1862,6 +1866,11 @@
+ 
+ ApplyOptionalPatch linux-kernel-test.patch
+ 
++ApplyOptionalPatch 0001-drm-edid-Add-Bigscreen-Beyond-to-non-desktop-l.patch
++ApplyOptionalPatch 0001-drm-edid-Add-Vive-Cosmos-Vive-Pro-2-to-non-desktop-l.patch
++ApplyOptionalPatch 0002-drm-edid-parse-DRM-VESA-dsc-bpp-target.patch
++ApplyOptionalPatch 0003-drm-amd-use-fixed-dsc-bits-per-pixel-from-edid.patch
++
+ %{log_msg "End of patch applications"}
+ # END OF PATCH APPLICATIONS
+ 
