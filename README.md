@@ -1,4 +1,75 @@
-# Vive Pro 2 linux driver
+# Vive Pro 2 linux driver: Fedora Kernel Patch Edition
+
+
+## Install:
+
+# TL;DR:
+
+First time setup:
+
+1. `git clone https://github.com/Gregregorovich/HMD-DSC-Linux-Kernel-Patch.git`
+
+2. `cd ./HMD-DSC-Linux-Kernel-Patch`
+
+3. `git switch fedora`
+
+4. `cd kernel-patches`
+
+5. `./install-fedora.sh`
+
+6. `./build-fedora.sh`
+
+
+Update the kernel:
+
+1. `cd ./HMD-DSC-Linux-Kernel-Patch/kernel-patches`
+
+2. `./build-fedora.sh`
+
+
+## Explanation:
+
+In `kernel-patches`, run `./install-fedora.sh` first, then run `./build-fedora.sh`
+Once run for the first time, `./install-fedora.sh` never needs to be run again.
+
+The `install-fedora.sh` script is an initial setup script to add patches
+to the Fedora kernel to support Display Stream Compression (DSC) and add
+HMDs to the non-desktop list.
+
+
+The `build-fedora.sh` script compiles the kernel with patches as set up in
+`./install-fedora.sh` then (re)installs the new kernel by calling the
+`./update-fedora.sh` script.
+
+This builds the most recent kernel pushed to release (I.E. the same
+version as could be obtained from a `dnf update`)
+
+
+To manually (re)install the most recent compiled kernel (and modules),
+run ./update-fedora.sh .
+./update-fedora.sh is run automatically as part of the ./build-fedora.sh script.
+
+
+The `install-fedora.sh` script is called once the kernel has been compiled:
+this script (re)installs the latest Fedora kernel (and modules) and prunes
+(deletes) any kernel RPMs older than the last four versions compiled. This
+number can be changed easily as it is set at the beginning of the script.
+
+
+## Why does this fork exist?
+
+The Fedora kernel is sufficiently different from the Arch kernel that the patches needed
+a bit of tweaking before they would successfully apply.
+
+In addition, I own a Bigscreen Beyond and it requires the same patches, in addition to
+adding it to the non-desktop list (which is included as an additional patch in this repo),
+but does not require the driver as it is native SteamVR and as such works in Monado with
+via Envision package acquired from `dnf`. I have not managed to get SteamVR working with
+the BSB, and currently have no intention to.
+
+
+# README for the rest of this repo; unchanged from master:
+
 /driver_lighthouse.so
 ## Why
 
