@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Run this first, then run ./build-fedora.sh
+# Once run for the first time, this never needs to be run again. 
+#
+# Initial setup script to add patches to the Fedora kernel to support
+# Display Stream Compression (DSC) and add HMDs to the non-desktop list
+# To manually (re)install the most recent compiled kernel (and modules),
+# run ./update-fedora.sh .
+# ./update-fedora.sh is run automatically as part of the ./build-fedora.sh script.
+
+
 FedoraVersion=$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/')
 BranchName=$(echo DSC-Patch-$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/'))
 
@@ -27,3 +37,5 @@ cp ../000* ./
 git add 000*
 git stage kernel.spec
 git commit -m "Added & applied kernel patches"
+
+echo "Initial setup complete. Run ./build-fedora.sh to compile and install the patched kernel."
