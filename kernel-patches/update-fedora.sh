@@ -90,7 +90,7 @@ echo
 echo "Switching to non-root user: $REGULAR_USER for a block of commands..."
 
 # Use su to switch to the regular user and run multiple non-elevated commands.
-su - "$REGULAR_USER" <<'EOF'
+su "$REGULAR_USER" <<'EOF'
     # Create the destination directory named for the kernel version
     DEST_DIR="../kernel-rpms/$KERNEL_VER"
     ARCHIVE_DIR="../kernel-rpms"
