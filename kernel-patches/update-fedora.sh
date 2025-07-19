@@ -75,12 +75,12 @@ echo "Kernel version installed: $KERNEL_INSTALLED"
 if [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
     echo "Reinstalling new kernel packages..."
     # Install the generated RPM packages
-    dnf reinstall --nogpgcheck \
+    dnf reinstall --nogpgcheck -y \
         ./$KERNEL_ARCH/kernel-{[0-9]*.rpm,core*.rpm,modules-[0-9]*.rpm,modules-core*.rpm,modules-extra*.rpm,devel-[0-9]*.rpm,devel-matched-[0-9]*.rpm,tools-[0-9]*.rpm,tools-libs-{[0-9]*.rpm,devel-[0-9]*.rpm}}
 else
     echo "Installing new kernel packages..."
     # Install the generated RPM packages
-    dnf install --nogpgcheck \
+    dnf install --nogpgcheck -y \
         ./$KERNEL_ARCH/kernel-{[0-9]*.rpm,core*.rpm,modules-[0-9]*.rpm,modules-core*.rpm,modules-extra*.rpm,devel-[0-9]*.rpm,devel-matched-[0-9]*.rpm,tools-[0-9]*.rpm,tools-libs-{[0-9]*.rpm,devel-[0-9]*.rpm}}
 fi
 echo "Kernel updated"
@@ -94,6 +94,23 @@ su "$REGULAR_USER" <<'EOF'
     # Create the destination directory named for the kernel version
     DEST_DIR="../kernel-rpms/$KERNEL_VER"
     ARCHIVE_DIR="../kernel-rpms"
+    # Kernel architecture
+    KERNEL_ARCH=$(uname -r | awk -F. '{print $(NF)}')
+    # Kernel version installed
+    KERNEL_INSTALLED=$(uname -r | sed -e "s/\.$(uname -r | awk -F. '{print $(NF-1)}').*//")
+    # The regex below looks for a pattern like: kernel-<major>.<minor>.<patch>-<???>e.g. kernel-5.15.12-200...rpm
+    KERNEL_VER=$(echo "$KERNEL_RPM" | sed -E 's/.*kernel-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*\.rpm/\1/')
+    # Kernel Version format (e.g., 5.15.10-200)
+    VERSION_REGEX="^.*[0-9]+\.[0-9]+\.[0-9]+-[0-9]+.*$"
+    # Directory to check for compiled kernels
+    KERNEL_RPM_DIR="./kernel-rpms"
+    if [[ -z "$KERNEL_VER" ]]; then
+      echo "Could not determine kernel version from RPM name: $KERNEL_RPM"
+      exit 1
+    fi
+    echo "Kernel version compiled: $KERNEL_VER"
+    echo "Kernel version installed: $KERNEL_INSTALLED"
+    
     mkdir -p "$DEST_DIR"
 
     # Move all RPMs containing the version into the dedicated directory
