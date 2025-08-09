@@ -70,7 +70,7 @@ if [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
     ReinstallFound=0
     # Determines whether the built kernel has been moved to the kernel-rpms directory
     find ./$KERNEL_ARCH/ -name "kernel-*.rpm" | grep -q "." && ReinstallFound=1
-    if [ $ReinstallPath == 1 ]; then
+    if [ $ReinstallFound == 1 ]; then
       ReinstallPath="./$KERNEL_ARCH"
     else
       find "../kernel-rpms/$KERNEL_VER/" -name "kernel-*.rpm" | grep -q "." && ReinstallFound=1
@@ -189,8 +189,7 @@ fi
 echo "Kernel updated, RPMs backed up, and old RPMs removed if specified."
 echo
 read -p "Do you want to update all other packages and flatpaks on this system? (y/n) " answer
-if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]
-then
+if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]; then
     echo "Updating remaining packages and flatpaks..."
     dnf update --refresh -y --exclude=kernel,kernel-core,kernel-modules,kernel-modules-core,kernel-modules-extra,kernel-modules-extra-matched,kernel-devel,kernel-devel-matched,kernel-tools,kernel-tools-libs,kernel-tools-libs-devel
     flatpak update -y
