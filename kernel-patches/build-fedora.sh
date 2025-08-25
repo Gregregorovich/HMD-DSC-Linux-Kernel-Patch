@@ -41,7 +41,7 @@ cd kernel || { echo "Cannot change directory to kernel"; exit 1; }
 echo "Switching to non-root user: $REGULAR_USER for to fetch latest git repo info"
 
 # Use su to switch to the regular user and run multiple non-elevated commands.
-su "$REGULAR_USER" <<'EOF'
+su - "$REGULAR_USER" <<'EOF'
     echo "Updating repo to latest kernel release version..."
     KERNEL_BRANCH=$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/')
     git pull origin $KERNEL_BRANCH --rebase
@@ -55,9 +55,9 @@ echo "Returned to root privileges."
 KERNEL_BRANCH=$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/')
 echo "Compiling kernel as root..."
 fedpkg --release $KERNEL_BRANCH local
-echo
+echo -e "\n"
 echo "Kernel compiled"
-echo
+echo -e "\n"
 
 # Extract the kernel version from one of the RPM filenames
 KERNEL_RPM=$(ls $KERNEL_ARCH/kernel-*.rpm 2>/dev/null | head -n 1)

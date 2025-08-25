@@ -13,6 +13,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "Script is running with sudo privileges as: $(whoami)"
+echo "Initiated by $SUDO_USER"
 
 # Determine the non-privileged user. If run via sudo, $SUDO_USER is set.
 if [ -n "$SUDO_USER" ]; then
@@ -21,8 +22,6 @@ else
     # Fall back to $USER if the script was not started with sudo.
     REGULAR_USER="$USER"
 fi
-
-
 
 # Kernel branch; e.g.: f41 / rawhide
 KERNEL_BRANCH=$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/')
@@ -50,8 +49,7 @@ if [[ -z "$KERNEL_RPM" ]]; then
   REINSTALL=true
   read -p "Do you want to reinstall the most recent compiled kernel ($KERNEL_INSTALLED)? (y/n) " answer
   if [[ $answer != y ]] || [[ $answer != yes ]] || [[ $answer != Y ]] || [[ $answer != YES ]] || [[ $answer != Yes ]]; then
-    echo "Exiting..."
-    #exit 1
+    REINSTALL=false
   fi
 fi
 
@@ -66,7 +64,7 @@ echo "Kernel version compiled: $KERNEL_VER"
 echo "Kernel version installed: $KERNEL_INSTALLED"
 
 # Either: Reinstall if the built kernel is the same as the current kernel
-if [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
+if [ $REINSTALL == true ] && [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
     ReinstallFound=0
     # Determines whether the built kernel has been moved to the kernel-rpms directory
     find ./$KERNEL_ARCH/ -name "kernel-*.rpm" | grep -q "." && ReinstallFound=1
@@ -91,19 +89,23 @@ if [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
     fi
 
 # Or: Install the newly built kernel
-else
+elif [ $REINSTALL != false ]; then
     echo "Installing new kernel packages..."
     # Install the generated RPM packages
     dnf install --nogpgcheck -y \
         ./$KERNEL_ARCH/kernel-{[0-9]*.rpm,core*.rpm,modules-[0-9]*.rpm,modules-core*.rpm,modules-extra*.rpm,devel-[0-9]*.rpm,devel-matched-[0-9]*.rpm,tools-[0-9]*.rpm,tools-libs-{[0-9]*.rpm,devel-[0-9]*.rpm}}
 fi
-echo "Kernel updated"
+if [ $REINSTALL != false ]; then
+    echo "Kernel updated"
+fi
 echo
 
+ARCHIVE_DIR="../kernel-rpms"
 
 read -p "Do you want to delete older built kernels (the last 4 are kept by default from this script)? (y/n) " answer
 if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]
 then
+  chown -R $SUDO_USER:$SUDO_USER $ARCHIVE_DIR
   echo "Switching to non-root user $REGULAR_USER to delete old kernel versions..."
 
 # Use su to switch to the regular user and run multiple non-elevated commands.
@@ -111,8 +113,6 @@ su "$REGULAR_USER" <<'EOF'
     # Number of previous compiled kernels to keep
     NUM_VERSIONS_TO_KEEP=4
     
-    # Create the destination directory named for the kernel version
-    DEST_DIR="../kernel-rpms/$KERNEL_VER"
     # Directory to check for compiled kernels
     ARCHIVE_DIR="../kernel-rpms"
     # Kernel architecture
@@ -137,7 +137,9 @@ su "$REGULAR_USER" <<'EOF'
       echo "Could not determine kernel version from RPM name: $KERNEL_RPM"
       exit 1
     fi
-
+    # Create the destination directory named for the kernel version
+    DEST_DIR="../kernel-rpms/$KERNEL_VER"
+    
     echo "Kernel version compiled: $KERNEL_VER"
     echo "Kernel version installed: $KERNEL_INSTALLED"
     
