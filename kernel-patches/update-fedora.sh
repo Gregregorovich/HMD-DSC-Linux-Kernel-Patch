@@ -47,10 +47,6 @@ if [[ -z "$KERNEL_RPM" ]]; then
     exit 1
   fi
   REINSTALL=true
-  read -p "Do you want to reinstall the most recent compiled kernel ($KERNEL_INSTALLED)? (y/n) " answer
-  if [[ $answer != y ]] || [[ $answer != yes ]] || [[ $answer != Y ]] || [[ $answer != YES ]] || [[ $answer != Yes ]]; then
-    REINSTALL=false
-  fi
 fi
 
 # The regex below looks for a pattern like: kernel-<major>.<minor>.<patch>-<???>e.g. kernel-5.15.12-200...rpm
@@ -63,8 +59,15 @@ fi
 echo "Kernel version compiled: $KERNEL_VER"
 echo "Kernel version installed: $KERNEL_INSTALLED"
 
+if [[ $REINSTALL == true ]] || [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
+  read -p "Do you want to reinstall the most recent compiled kernel ($KERNEL_INSTALLED)? (y/n) " answer
+  if [[ $answer != y ]] || [[ $answer != yes ]] || [[ $answer != Y ]] || [[ $answer != YES ]] || [[ $answer != Yes ]]; then
+    REINSTALL=false
+  fi
+fi
+
 # Either: Reinstall if the built kernel is the same as the current kernel
-if [ $REINSTALL == true ] && [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
+if [[ $REINSTALL == true ]] && [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
     ReinstallFound=0
     # Determines whether the built kernel has been moved to the kernel-rpms directory
     find ./$KERNEL_ARCH/ -name "kernel-*.rpm" | grep -q "." && ReinstallFound=1
@@ -89,30 +92,65 @@ if [ $REINSTALL == true ] && [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
     fi
 
 # Or: Install the newly built kernel
-elif [ $REINSTALL != false ]; then
+elif [[ $REINSTALL != false ]]; then
     echo "Installing new kernel packages..."
     # Install the generated RPM packages
     dnf install --nogpgcheck -y \
         ./$KERNEL_ARCH/kernel-{[0-9]*.rpm,core*.rpm,modules-[0-9]*.rpm,modules-core*.rpm,modules-extra*.rpm,devel-[0-9]*.rpm,devel-matched-[0-9]*.rpm,tools-[0-9]*.rpm,tools-libs-{[0-9]*.rpm,devel-[0-9]*.rpm}}
 fi
-if [ $REINSTALL != false ]; then
+if [[ $REINSTALL != false ]]; then
     echo "Kernel updated"
 fi
 echo
 
 ARCHIVE_DIR="../kernel-rpms"
 
+# Use su to switch to the regular user and move the compiled kernel to the archive directory ../kernel-rpms
+su "$REGULAR_USER" <<'EOF'
+    # Kernel architecture
+    KERNEL_ARCH=$(uname -r | awk -F. '{print $(NF)}')
+    # Kernel version installed
+    KERNEL_INSTALLED=$(uname -r | sed -e "s/\.$(uname -r | awk -F. '{print $(NF-1)}').*//")
+    # Kernel version to install
+    KERNEL_RPM=$(ls $KERNEL_ARCH/kernel-*.rpm 2>/dev/null | head -n 1)
+    if [[ -z "$KERNEL_RPM" ]]; then
+      KERNEL_RPM=$(ls ../kernel-rpms/$KERNEL_INSTALLED/kernel-*.rpm 2>/dev/null | head -n 1)
+      REINSTALL=true
+      if [[ -z "$KERNEL_RPM" ]]; then
+        echo "No kernel RPM files were found in $KERNEL_ARCH ,"
+        echo "nor the `kernel-rpms` directory. Exiting."
+        exit 1
+      fi
+    fi
+    # The regex below looks for a pattern like: kernel-<major>.<minor>.<patch>-<???>e.g. kernel-5.15.12-200...rpm
+    KERNEL_VER=$(echo "$KERNEL_RPM" | sed -E 's/.*kernel-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*\.rpm/\1/')
+    if [[ -z "$KERNEL_VER" ]]; then
+      echo "Could not determine kernel version from RPM name: $KERNEL_RPM"
+      exit 1
+    fi
+    # Create the destination directory named for the kernel version
+    DEST_DIR="../kernel-rpms/$KERNEL_VER"
+    
+    mkdir -p "$DEST_DIR"
+
+    # Move all RPMs containing the version into the dedicated directory
+    if [[ $REINSTALL != true ]]; then
+      mv $KERNEL_ARCH/*"${KERNEL_VER}"*.rpm "$DEST_DIR"/
+    fi
+EOF
+
 read -p "Do you want to delete older built kernels (the last 4 are kept by default from this script)? (y/n) " answer
 if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]
 then
-  chown -R $SUDO_USER:$SUDO_USER $ARCHIVE_DIR
   echo "Switching to non-root user $REGULAR_USER to delete old kernel versions..."
 
-# Use su to switch to the regular user and run multiple non-elevated commands.
+  #Change ownership of old kernel RPMs to allow for deletion
+  chown -R $SUDO_USER:$SUDO_USER $ARCHIVE_DIR
+# Use su to switch to the regular user and delete kernels older
+#  than NUM_VERSIONS_TO_KEEP (default=4) old
 su "$REGULAR_USER" <<'EOF'
     # Number of previous compiled kernels to keep
     NUM_VERSIONS_TO_KEEP=4
-    
     # Directory to check for compiled kernels
     ARCHIVE_DIR="../kernel-rpms"
     # Kernel architecture
@@ -139,16 +177,6 @@ su "$REGULAR_USER" <<'EOF'
     fi
     # Create the destination directory named for the kernel version
     DEST_DIR="../kernel-rpms/$KERNEL_VER"
-    
-    echo "Kernel version compiled: $KERNEL_VER"
-    echo "Kernel version installed: $KERNEL_INSTALLED"
-    
-    mkdir -p "$DEST_DIR"
-
-    # Move all RPMs containing the version into the dedicated directory
-    if [[ $REINSTALL != true ]]; then
-      mv $KERNEL_ARCH/*"${KERNEL_VER}"*.rpm "$DEST_DIR"/
-    fi
 
     # Now, delete directories in ../kernel-rpms that are older than the current plus 3 previous versions.
     cd "$ARCHIVE_DIR" || { echo "Cannot change to ./kernel-rpms"; exit 1; }
