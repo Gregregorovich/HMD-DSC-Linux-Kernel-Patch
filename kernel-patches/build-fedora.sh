@@ -54,7 +54,7 @@ echo "Returned to root privileges."
 # Build the local kernel packages for release “f41”
 KERNEL_BRANCH=$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/')
 echo "Compiling kernel as root..."
-#fedpkg --release $KERNEL_BRANCH local
+fedpkg --release $KERNEL_BRANCH local
 echo -e "\n"
 echo "Kernel compiled"
 echo -e "\n"
