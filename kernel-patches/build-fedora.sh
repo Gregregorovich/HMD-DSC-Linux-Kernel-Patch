@@ -76,5 +76,10 @@ fi
 echo "Kernel version identified as $KERNEL_VER"
 echo "Kernel architecture identified as $KERNEL_ARCH"
 
+read -p "Do you want to install the most recent compiled kernel ($KERNEL_INSTALLED)? (y/n) " answer
+if [[ $answer != y ]] || [[ $answer != yes ]] || [[ $answer != Y ]] || [[ $answer != YES ]] || [[ $answer != Yes ]]; then
 echo "Installing new kernel packages..."
-../update-fedora.sh
+  ../update-fedora.sh
+else
+  "Kernel patched and compiled"
+fi

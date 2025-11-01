@@ -74,6 +74,20 @@ if [[ $REINSTALL == true ]] && [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
     if [ $ReinstallFound == 1 ]; then
       ReinstallPath="./$KERNEL_ARCH"
     else
+      # Define newest kernel to be installed (presumably newer than the one running)
+      # Regex for the expected format of a kernel directory
+      VERSION_REGEX="^.*[0-9]+\.[0-9]+\.[0-9]+-[0-9]+.*$"
+      # Initialize the directories array
+      declare -a directories
+      # Find directories matching the regex and extract the version string
+      directories=(`find -maxdepth 1 -type d -regex "$VERSION_REGEX" |
+        sed -E 's/^\./\0/' |  # Add leading dot for sort -rV
+        sort -rV`) # sort -V sorts by oldest first; -r reverses this ordering
+      # Define the new kernel to be installed: the first of the list
+      NEW_KERNEL=echo $directories[1] | sed -e "s|\.\/||"
+      echo "Installing Kernel $NEW_KERNEL"
+      KERNEL_RPM=$(ls ../kernel-rpms/$NEW_KERNEL/kernel-*.rpm 2>/dev/null | head -n 1)
+      KERNEL_VER=$(echo "$KERNEL_RPM" | sed -E 's/.*kernel-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*\.rpm/\1/')
       find "../kernel-rpms/$KERNEL_VER/" -name "kernel-*.rpm" | grep -q "." && ReinstallFound=1
       if [ $ReinstallFound == 1 ]; then
         ReinstallPath="../kernel-rpms/$KERNEL_VER"
