@@ -20,7 +20,7 @@ index e47098fa5aac..1c9c4925ed2f 100644
 +++ b/drivers/gpu/drm/amd/display/amdgpu_dm/amdgpu_dm_helpers.c
 @@ -129,6 +129,8 @@ enum dc_edid_status dm_helpers_parse_edid_caps(
  
- 	apply_edid_quirks(dev, edid_buf, edid_caps);
+ 	apply_edid_quirks(link, edid_buf, edid_caps);
  
 +	edid_caps->dsc_fixed_bits_per_pixel_x16 = connector->display_info.dp_dsc_bpp;
 +
