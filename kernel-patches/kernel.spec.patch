@@ -8,7 +8,6 @@
 +Patch10001: 0001-drm-edid-Add-Vive-Cosmos-Vive-Pro-2-to-non-desktop-l.patch
 +Patch10002: 0002-drm-edid-parse-DRM-VESA-dsc-bpp-target.patch
 +Patch10003: 0003-drm-amd-use-fixed-dsc-bits-per-pixel-from-edid.patch
-+Patch10004: rust-build_error-and-rustdoc-as-kernel-objects.patch
 +
  # empty final patch to facilitate testing of kernel patches
  Patch999999: linux-kernel-test.patch
@@ -21,7 +20,6 @@
 +ApplyOptionalPatch 0001-drm-edid-Add-Vive-Cosmos-Vive-Pro-2-to-non-desktop-l.patch
 +ApplyOptionalPatch 0002-drm-edid-parse-DRM-VESA-dsc-bpp-target.patch
 +ApplyOptionalPatch 0003-drm-amd-use-fixed-dsc-bits-per-pixel-from-edid.patch
-+ApplyOptionalPatch rust-build_error-and-rustdoc-as-kernel-objects.patch
 +
  %{log_msg "End of patch applications"}
  # END OF PATCH APPLICATIONS

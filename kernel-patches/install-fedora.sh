@@ -13,18 +13,25 @@
 FedoraVersion=$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/')
 BranchName=$(echo DSC-Patch-$(uname -r | awk -F. '{print $(NF-1)}' | sed -e 's/fc/f/'))
 
-#Sometimes git cloning fails. This ensures it sucessfully clones the repo.
-while true; do
-  if git clone https://src.fedoraproject.org/rpms/kernel.git; then
-    echo "Clone successful!"
-    break
-  else
-    echo "Clone failed, retrying..."
-  fi
-done
+if [ -d kernel ]; then
+  PreExistingKernel=1
+else
+  #Sometimes git cloning fails. This ensures it sucessfully clones the repo.
+  while true; do
+    if git clone https://src.fedoraproject.org/rpms/kernel.git; then
+      echo "Clone successful!"
+      break
+    else
+      echo "Clone failed, retrying..."
+    fi
+  done
+fi
+if [ -d kernel-rpms]; then
+else
+  #Make archive for the most recent 3 installed kernels
+  mkdir kernel-rpms
+fi
 
-#Make archive for the most recent 3 installed kernels
-mkdir kernel-rpms
 cd kernel
 
 git switch $FedoraVersion
@@ -36,6 +43,6 @@ cp ../000* ./
 
 git add 000*
 git stage kernel.spec
-git commit -m "Added & applied kernel patches"
+git commit -m "Added & applied kernel patches for DP Display Stream Compression (DSC)"
 
 echo "Initial setup complete. Run ./build-fedora.sh to compile and install the patched kernel."
