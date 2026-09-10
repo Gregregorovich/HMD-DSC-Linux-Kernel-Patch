@@ -6,7 +6,8 @@
 # This builds the most recent kernel pushed to release (I.E. the same
 # version as could be obtained from a `dnf update`)
 
-
+# Identify kernel version installed
+KERNEL_INSTALLED=$(uname -r | sed -e "s/\.$(uname -r | awk -F. '{print $(NF-1)}').*//")
 
 # Ensure the script is running as root (via sudo)
 if [ "$EUID" -ne 0 ]; then
@@ -76,10 +77,10 @@ fi
 echo "Kernel version identified as $KERNEL_VER"
 echo "Kernel architecture identified as $KERNEL_ARCH"
 
-read -p "Do you want to install the most recent compiled kernel ($KERNEL_INSTALLED)? (y/n) " answer
-if [[ $answer != y ]] || [[ $answer != yes ]] || [[ $answer != Y ]] || [[ $answer != YES ]] || [[ $answer != Yes ]]; then
-echo "Installing new kernel packages..."
+read -p "Do you want to install the most recent compiled kernel (Installed: $KERNEL_INSTALLED)? (y/n) " answer
+if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]; then
+  echo "Installing new kernel packages..."
   ../update-fedora.sh
 else
-  "Kernel patched and compiled"
+  echo "Kernel patched and compiled. Run ./update-fedora.sh to install"
 fi

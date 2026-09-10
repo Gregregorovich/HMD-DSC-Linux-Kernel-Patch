@@ -31,12 +31,15 @@ KERNEL_ARCH=$(uname -r | awk -F. '{print $(NF)}')
 KERNEL_INSTALLED=$(uname -r | sed -e "s/\.$(uname -r | awk -F. '{print $(NF-1)}').*//")
 # Kernel Version format (e.g., 5.15.10-200)
 VERSION_REGEX="^.*[0-9]+\.[0-9]+\.[0-9]+-[0-9]+.*$"
+ARCHIVE_DIR="../kernel-rpms"
 
 # Change working directory to script's directory
 cd $(dirname "$0")
 
 # Change to the kernel source directory and update
 cd kernel || { echo "Cannot change directory to kernel"; exit 1; }
+echo $REGULAR_USER
+chown -R $REGULAR_USER:$REGULAR_USER x86_64
 
 # Extract the kernel version from one of the RPM filenames
 KERNEL_RPM=$(ls $KERNEL_ARCH/kernel-*.rpm 2>/dev/null | head -n 1)
@@ -59,20 +62,22 @@ fi
 echo "Kernel version compiled: $KERNEL_VER"
 echo "Kernel version installed: $KERNEL_INSTALLED"
 
-if [[ $REINSTALL == true ]] || [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
-  read -p "Do you want to reinstall the most recent compiled kernel ($KERNEL_INSTALLED)? (y/n) " answer
-  if [[ $answer != y ]] || [[ $answer != yes ]] || [[ $answer != Y ]] || [[ $answer != YES ]] || [[ $answer != Yes ]]; then
-    REINSTALL=false
-  fi
-fi
+#if [[ $REINSTALL == true ]] || [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
+#  read -p "Do you want to reinstall the most recent compiled kernel ($KERNEL_INSTALLED)? (y/n) " answer
+#  if [[ $answer != y ]] || [[ $answer != yes ]] || [[ $answer != Y ]] || [[ $answer != YES ]] || [[ $answer != Yes ]]; then
+#    REINSTALL=false
+#  fi
+#fi
 
 # Either: Reinstall if the built kernel is the same as the current kernel
-if [[ $REINSTALL == true ]] && [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
+if [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
+    echo "Reinstalling; Installed kernel version matches newly-compiled kernel"
     ReinstallFound=0
     # Determines whether the built kernel has been moved to the kernel-rpms directory
-    find ./$KERNEL_ARCH/ -name "kernel-*.rpm" | grep -q "." && ReinstallFound=1
+    find ./$KERNEL_ARCH/ -name "kernel-*.rpm" | grep -q rpm && ReinstallFound=1
     if [ $ReinstallFound == 1 ]; then
       ReinstallPath="./$KERNEL_ARCH"
+      echo "ReinstallPath=./$KERNEL_ARCH"
     else
       # Define newest kernel to be installed (presumably newer than the one running)
       # Regex for the expected format of a kernel directory
@@ -80,14 +85,14 @@ if [[ $REINSTALL == true ]] && [[ $KERNEL_VER == $KERNEL_INSTALLED ]]; then
       # Initialize the directories array
       declare -a directories
       # Find directories matching the regex and extract the version string
-      directories=(`find -maxdepth 1 -type d -regex "$VERSION_REGEX" |
+      directories=(`find "$ARCHIVE_DIR" -maxdepth 1 -type d -regex "$VERSION_REGEX" |
         sed -E 's/^\./\0/' |  # Add leading dot for sort -rV
         sort -rV`) # sort -V sorts by oldest first; -r reverses this ordering
       # Define the new kernel to be installed: the first of the list
-      NEW_KERNEL=echo $directories[1] | sed -e "s|\.\/||"
+      NEW_KERNEL=$(echo $directories[1] | sed -e "s|$ARCHIVE_DIR\/||")
       echo "Installing Kernel $NEW_KERNEL"
       KERNEL_RPM=$(ls ../kernel-rpms/$NEW_KERNEL/kernel-*.rpm 2>/dev/null | head -n 1)
-      KERNEL_VER=$(echo "$KERNEL_RPM" | sed -E 's/.*kernel-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*\.rpm/\1/')
+      #KERNEL_VER=$(echo "$KERNEL_RPM" | sed -E 's/.*kernel-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+).*\.rpm/\1/')
       find "../kernel-rpms/$KERNEL_VER/" -name "kernel-*.rpm" | grep -q "." && ReinstallFound=1
       if [ $ReinstallFound == 1 ]; then
         ReinstallPath="../kernel-rpms/$KERNEL_VER"
@@ -116,8 +121,6 @@ if [[ $REINSTALL != false ]]; then
     echo "Kernel updated"
 fi
 echo
-
-ARCHIVE_DIR="../kernel-rpms"
 
 # Use su to switch to the regular user and move the compiled kernel to the archive directory ../kernel-rpms
 su "$REGULAR_USER" <<'EOF'
@@ -154,8 +157,7 @@ su "$REGULAR_USER" <<'EOF'
 EOF
 
 read -p "Do you want to delete older built kernels (the last 4 are kept by default from this script)? (y/n) " answer
-if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]
-then
+if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]; then
   echo "Switching to non-root user $REGULAR_USER to delete old kernel versions..."
 
   #Change ownership of old kernel RPMs to allow for deletion
@@ -221,11 +223,20 @@ su "$REGULAR_USER" <<'EOF'
             sleep 1
           done
           
-          # Delete the oldest directories
-          for ((i=0; i<$num_to_delete; i++)); do
-            dir_to_delete="${directories[$i]}"
-            rm -rf "$dir_to_delete"
-          done
+          read -p "Confirm: Do you want to delete older built kernels (the last 4 are kept by default from this script)? (y/n) " answer
+          if [[ $answer == y ]] || [[ $answer == yes ]] || [[ $answer == Y ]] || [[ $answer == YES ]] || [[ $answer == Yes ]]; then
+            echo "Deleting $dir_to_delete"
+          
+            # Delete the oldest directories
+            for ((i=0; i<$num_to_delete; i++)); do
+              dir_to_delete="${directories[$i]}"
+              rm -rf "$dir_to_delete"
+              kernel_files_to_delete=$(echo $dir_to_delete | sed -E "s/(.*)\/([0-9]*\.)(.*)-.*/\2\3/")
+              find ../kernel/ -maxdepth 1 -regex ".*$kernel_files_to_delete.*"
+              #find ../kernel/ -maxdepth 1 -regex ".*$kernel_files_to_delete.*\.(log|src.*)"
+              #rm -rf
+            done
+          fi
         fi
 EOF
 fi
